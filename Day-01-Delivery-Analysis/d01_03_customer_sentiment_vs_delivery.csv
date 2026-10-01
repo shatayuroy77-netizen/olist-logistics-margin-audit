@@ -1,0 +1,5 @@
+purchase_quarter,delivery_status,total_orders,avg_review_score
+2018-Q1,delay,2974,2.23
+2018-Q1,"on time",17656,4.22
+2018-Q2,delay,985,2.82
+2018-Q2,"on time",18586,4.32

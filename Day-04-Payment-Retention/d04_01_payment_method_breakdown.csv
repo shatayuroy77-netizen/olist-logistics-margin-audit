@@ -1,0 +1,5 @@
+payment_type,no_of_transaction,total_transaction_value,avg_transaction_value,gmv_share_pct
+credit_card,76795,12542084.19,163.32,78.34
+boleto,19784,2869361.27,145.03,17.92
+voucher,5775,379436.87,65.7,2.37
+debit_card,1529,217989.79,142.57,1.36

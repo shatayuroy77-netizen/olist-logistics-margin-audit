@@ -1,0 +1,4 @@
+customer_loyalty_segment,total_unique_customer,customer_share_pct
+"01_Single_Purchase_Buyer (1x)",90557,97.00
+"02_Repeat_Purchase_Buyer (2x)",2573,2.76
+"03_Loyal_Customer (3x+)",228,0.24

@@ -1,0 +1,5 @@
+purchase_quarter,shipping_type,total_order,total_freight_value,avg_freight_value
+2018-Q1,Interstate,15253,348395.76,22.84
+2018-Q1,Local,8319,111819.97,13.44
+2018-Q2,Interstate,13655,347032.35,25.41
+2018-Q2,Local,8992,119442.75,13.28

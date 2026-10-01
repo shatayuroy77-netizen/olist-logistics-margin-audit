@@ -1,0 +1,11 @@
+# python cache
+__pycache__/
+*.pyc
+
+# environment / local configs
+.env
+venv/
+
+# raw dataset directory
+Raw_Data/
+*.csv

@@ -1,0 +1,5 @@
+payment_type,total_orders,avg_approval_hours,avg_approval_days
+boleto,19177,33.00,1.38
+debit_card,1485,9.10,0.38
+voucher,3679,8.39,0.35
+credit_card,74304,4.45,0.19

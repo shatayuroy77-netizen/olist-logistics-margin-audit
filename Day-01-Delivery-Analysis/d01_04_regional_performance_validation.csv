@@ -1,0 +1,51 @@
+customer_state,purchase_quarter,delivery_status,total_orders,avg_review_score
+AC,2018-Q1,"on time",11,4.09
+AC,2018-Q2,delay,1,1.00
+AC,2018-Q2,"on time",8,4.25
+AL,2018-Q1,delay,34,2.29
+AL,2018-Q1,"on time",56,4.13
+AL,2018-Q2,delay,10,2.90
+AL,2018-Q2,"on time",60,4.40
+AM,2018-Q1,delay,3,2.33
+AM,2018-Q1,"on time",25,3.84
+AM,2018-Q2,"on time",22,4.55
+AP,2018-Q1,"on time",18,3.78
+AP,2018-Q2,"on time",12,4.58
+BA,2018-Q1,delay,142,2.32
+BA,2018-Q1,"on time",529,4.00
+BA,2018-Q2,delay,115,2.61
+BA,2018-Q2,"on time",530,4.20
+CE,2018-Q1,delay,95,1.99
+CE,2018-Q1,"on time",156,4.06
+CE,2018-Q2,delay,35,2.80
+CE,2018-Q2,"on time",205,4.33
+DF,2018-Q1,delay,62,2.37
+DF,2018-Q1,"on time",392,4.15
+DF,2018-Q2,delay,25,2.96
+DF,2018-Q2,"on time",406,4.37
+ES,2018-Q1,delay,98,2.38
+ES,2018-Q1,"on time",324,4.32
+ES,2018-Q2,delay,53,3.09
+ES,2018-Q2,"on time",338,4.20
+GO,2018-Q1,delay,66,2.36
+GO,2018-Q1,"on time",366,4.16
+GO,2018-Q2,delay,18,2.44
+GO,2018-Q2,"on time",354,4.23
+MA,2018-Q1,delay,50,2.26
+MA,2018-Q1,"on time",107,4.20
+MA,2018-Q2,delay,18,2.83
+MA,2018-Q2,"on time",101,4.26
+MG,2018-Q1,delay,309,2.43
+MG,2018-Q1,"on time",2189,4.19
+MG,2018-Q2,delay,111,2.90
+MG,2018-Q2,"on time",2122,4.33
+MS,2018-Q1,delay,44,2.36
+MS,2018-Q1,"on time",150,4.29
+MS,2018-Q2,delay,10,3.20
+MS,2018-Q2,"on time",125,4.36
+MT,2018-Q1,delay,25,2.28
+MT,2018-Q1,"on time",176,4.21
+MT,2018-Q2,delay,5,2.80
+MT,2018-Q2,"on time",183,4.40
+PA,2018-Q1,delay,48,1.81
+PA,2018-Q1,"on time",146,3.92

@@ -1,0 +1,5 @@
+purchase_quarter,shipping_type,total_order,toxic_item,toxic_item_pct,total_toxic_freight_value,avg_toxic_freight
+2018-Q1,Interstate,15253,769,5.04,18233.67,23.71
+2018-Q1,Local,8319,74,0.89,875.22,11.83
+2018-Q2,Interstate,13655,824,6.03,22881,27.77
+2018-Q2,Local,8992,102,1.13,1379.71,13.53

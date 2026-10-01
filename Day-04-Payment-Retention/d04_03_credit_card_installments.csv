@@ -1,0 +1,5 @@
+installment_tier,total_transaction,total_gmv,avg_ticket_value,transaction_share_pct,gmv_share_pct
+"01_Lump_Sum (1x)",25455,2440445.43,95.87,33.15,19.46
+"02_Short_Tier (2-3x)",22874,3070386.83,134.23,29.79,24.48
+"03_Mid_Tier (4-6x)",16257,2947693.72,181.32,21.17,23.5
+"04_Long_Tier (7x+)",12209,4083558.21,334.47,15.90,32.56

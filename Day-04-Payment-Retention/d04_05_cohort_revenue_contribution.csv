@@ -1,0 +1,4 @@
+customer_loyalty_segment,total_customers,total_gmv,gmv_share_pct,avg_order_value_aov,avg_customer_lifetime_value
+"01_Single_Purchase_Buyer (1x)",90556,14558104.56,94.4,160.76,160.76
+"02_Repeat_Purchase_Buyer (2x)",2573,748808.38,4.86,145.51,291.03
+"03_Loyal_Customer (3x+)",228,115548.83,0.75,149.1,506.79
