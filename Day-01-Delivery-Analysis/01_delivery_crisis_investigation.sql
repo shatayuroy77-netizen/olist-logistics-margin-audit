@@ -9,7 +9,7 @@
 
 -- ----------------------------------------------------------------------------
 -- Step 0: Database & Schema Preparation
--- Goal: Ensure timestamp columns are properly typed for date operations.
+-- Goal: Ensure timestamp columns are properly typed and create the reusable review view.
 -- Note: run once before the analysis queries.
 -- ----------------------------------------------------------------------------
 CREATE DATABASE IF NOT EXISTS olist_db;
@@ -31,7 +31,7 @@ GROUP BY order_id;
 
 
 -- ----------------------------------------------------------------------------
--- Step 1: Macro Fulfillment Baseline
+-- Step 1a: Macro Fulfillment Baseline
 -- Question: Did national late delivery rates worsen in 2018-Q2 compared to Q1?
 -- Measuring baseline delivered volume and percentage of doorstep delivery breaches.
 -- ----------------------------------------------------------------------------
@@ -45,6 +45,29 @@ SELECT
                 WHEN DATE(order_delivered_customer_date) > DATE(order_estimated_delivery_date) THEN 1
                 ELSE 0
             END) / COUNT(order_id), 2) AS late_order_pct
+FROM orders
+WHERE order_status = 'delivered'
+  AND order_delivered_customer_date IS NOT NULL
+  AND order_estimated_delivery_date IS NOT NULL
+  AND order_purchase_timestamp >= '2018-01-01'
+  AND order_purchase_timestamp < '2018-07-01'
+GROUP BY purchase_quarter
+ORDER BY purchase_quarter;
+
+
+-- ----------------------------------------------------------------------------
+-- Step 1b: Promised vs Actual Delivery Time
+-- Question: Did late deliveries fall because delivery got faster, or because Olist promised longer delivery times?
+-- Comparing the average promised delivery window with the average actual delivery time.
+-- ----------------------------------------------------------------------------
+SELECT 
+    CASE
+        WHEN order_purchase_timestamp >= '2018-01-01' AND order_purchase_timestamp < '2018-04-01' THEN '2018-Q1'
+        WHEN order_purchase_timestamp >= '2018-04-01' AND order_purchase_timestamp < '2018-07-01' THEN '2018-Q2'
+    END AS purchase_quarter,
+    COUNT(order_id) AS total_delivered_orders,
+    ROUND(AVG(DATEDIFF(order_estimated_delivery_date, order_purchase_timestamp)), 2) AS avg_promised_days,
+    ROUND(AVG(DATEDIFF(order_delivered_customer_date, order_purchase_timestamp)), 2) AS avg_actual_days
 FROM orders
 WHERE order_status = 'delivered'
   AND order_delivered_customer_date IS NOT NULL
@@ -250,3 +273,25 @@ WHERE review_creation_date >= '2018-01-01'
   AND review_creation_date < '2018-07-01'
 GROUP BY review_month
 ORDER BY review_month;
+
+
+-- ----------------------------------------------------------------------------
+-- Step 8: Monthly Late Delivery Rate
+-- Question: Did the monthly complaint spike move together with late deliveries?
+-- Tracking the late delivery rate by delivery month, to compare with Step 7's monthly 1-star rate.
+-- ----------------------------------------------------------------------------
+SELECT 
+    LEFT(order_delivered_customer_date, 7) AS delivery_month,
+    COUNT(order_id) AS total_delivered_orders,
+    ROUND(100.0 * SUM(CASE
+                WHEN DATE(order_delivered_customer_date) > DATE(order_estimated_delivery_date) THEN 1
+                ELSE 0
+            END) / COUNT(order_id), 2) AS late_order_pct
+FROM orders
+WHERE order_status = 'delivered'
+  AND order_delivered_customer_date IS NOT NULL
+  AND order_estimated_delivery_date IS NOT NULL
+  AND order_delivered_customer_date >= '2018-01-01'
+  AND order_delivered_customer_date < '2018-07-01'
+GROUP BY delivery_month
+ORDER BY delivery_month;
