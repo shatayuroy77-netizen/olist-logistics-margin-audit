@@ -10,6 +10,7 @@
 -- ----------------------------------------------------------------------------
 -- Step 0: Database & Schema Preparation
 -- Goal: Ensure timestamp columns are properly typed for date operations.
+-- Note: run once before the analysis queries.
 -- ----------------------------------------------------------------------------
 CREATE DATABASE IF NOT EXISTS olist_db;
 USE olist_db;
@@ -20,6 +21,13 @@ ALTER TABLE orders
     MODIFY COLUMN order_delivered_carrier_date DATETIME,
     MODIFY COLUMN order_estimated_delivery_date DATETIME,
     MODIFY COLUMN order_delivered_customer_date DATETIME;
+
+
+-- Reusable view: one review score per order (some orders have multiple reviews)
+CREATE OR REPLACE VIEW v_one_review AS
+SELECT order_id, AVG(review_score) AS review_score
+FROM order_reviews
+GROUP BY order_id;
 
 
 -- ----------------------------------------------------------------------------
@@ -107,11 +115,6 @@ ORDER BY purchase_quarter, delivery_status;
 -- Question: How severe is the customer review score penalty when a delivery is delayed?
 -- Quantifying the impact of on-time vs delayed deliveries on average review scores.
 -- ----------------------------------------------------------------------------
-WITH one_review AS (
-    SELECT order_id, AVG(review_score) AS review_score
-    FROM order_reviews
-    GROUP BY order_id
-)
 SELECT 
     CASE
         WHEN o.order_purchase_timestamp >= '2018-01-01' AND o.order_purchase_timestamp < '2018-04-01' THEN '2018-Q1'
@@ -124,7 +127,7 @@ SELECT
     COUNT(o.order_id) AS total_orders,
     ROUND(AVG(o_r.review_score), 2) AS avg_review_score
 FROM orders o
-INNER JOIN one_review o_r ON o.order_id = o_r.order_id
+INNER JOIN v_one_review o_r ON o.order_id = o_r.order_id
 WHERE o.order_status = 'delivered'
   AND o.order_delivered_customer_date IS NOT NULL
   AND o.order_estimated_delivery_date IS NOT NULL
@@ -139,11 +142,6 @@ ORDER BY purchase_quarter, delivery_status;
 -- Question: Did remote states face isolated logistics failures masked by São Paulo volume?
 -- Auditing state-level delay rates and review score distributions across quarters.
 -- ----------------------------------------------------------------------------
-WITH one_review AS (
-    SELECT order_id, AVG(review_score) AS review_score
-    FROM order_reviews
-    GROUP BY order_id
-)
 SELECT 
     c.customer_state,
     CASE
@@ -157,7 +155,7 @@ SELECT
     COUNT(o.order_id) AS total_orders,
     ROUND(AVG(o_r.review_score), 2) AS avg_review_score
 FROM orders o
-INNER JOIN one_review o_r ON o.order_id = o_r.order_id
+INNER JOIN v_one_review o_r ON o.order_id = o_r.order_id
 INNER JOIN customers c ON c.customer_id = o.customer_id
 WHERE o.order_status = 'delivered'
   AND o.order_delivered_customer_date IS NOT NULL
@@ -173,21 +171,16 @@ ORDER BY c.customer_state, purchase_quarter;
 -- Question: Are non-delivered orders (cancelled, unavailable, stuck in transit) dragging down the overall review score?
 -- Checking non-delivered order status distributions and their impact on review sentiment.
 -- ----------------------------------------------------------------------------
-WITH one_review AS (
-    SELECT order_id, AVG(review_score) AS review_score
-    FROM order_reviews
-    GROUP BY order_id
-)
 SELECT 
     o.order_status,
     CASE
         WHEN o.order_purchase_timestamp >= '2018-01-01' AND o.order_purchase_timestamp < '2018-04-01' THEN '2018-Q1'
         WHEN o.order_purchase_timestamp >= '2018-04-01' AND o.order_purchase_timestamp < '2018-07-01' THEN '2018-Q2'
     END AS purchase_quarter,
-    COUNT(DISTINCT o.order_id) AS total_orders,
+    COUNT(o.order_id) AS total_orders,
     ROUND(AVG(o_r.review_score), 2) AS avg_review_score
 FROM orders o
-LEFT JOIN one_review o_r ON o.order_id = o_r.order_id
+LEFT JOIN v_one_review o_r ON o.order_id = o_r.order_id
 WHERE o.order_purchase_timestamp >= '2018-01-01'
   AND o.order_purchase_timestamp < '2018-07-01'
 GROUP BY purchase_quarter, o.order_status
@@ -199,11 +192,6 @@ ORDER BY purchase_quarter, total_orders DESC;
 -- Question: By how much do non-delivered orders pull down the overall review score?
 -- Comparing the average score of all reviewed orders vs delivered orders only.
 -- ----------------------------------------------------------------------------
-WITH one_review AS (
-    SELECT order_id, AVG(review_score) AS review_score
-    FROM order_reviews
-    GROUP BY order_id
-)
 SELECT 
     CASE
         WHEN o.order_purchase_timestamp >= '2018-01-01' AND o.order_purchase_timestamp < '2018-04-01' THEN '2018-Q1'
@@ -214,7 +202,7 @@ SELECT
     ROUND(AVG(CASE WHEN o.order_status = 'delivered' THEN o_r.review_score END), 2) AS avg_score_delivered_only,
     ROUND(AVG(o_r.review_score) - AVG(CASE WHEN o.order_status = 'delivered' THEN o_r.review_score END), 2) AS score_drag
 FROM orders o
-LEFT JOIN one_review o_r ON o.order_id = o_r.order_id
+LEFT JOIN v_one_review o_r ON o.order_id = o_r.order_id
 WHERE o.order_purchase_timestamp >= '2018-01-01'
   AND o.order_purchase_timestamp < '2018-07-01'
 GROUP BY purchase_quarter
