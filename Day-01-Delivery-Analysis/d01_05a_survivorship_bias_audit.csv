@@ -1,0 +1,14 @@
+order_status,purchase_quarter,total_orders,avg_review_score
+delivered,2018-Q1,20627,3.94
+shipped,2018-Q1,264,1.74
+canceled,2018-Q1,133,1.72
+unavailable,2018-Q1,95,1.60
+invoiced,2018-Q1,44,1.25
+processing,2018-Q1,44,1.30
+created,2018-Q1,1,NULL
+delivered,2018-Q2,19646,4.25
+shipped,2018-Q2,196,2.02
+canceled,2018-Q2,57,1.42
+invoiced,2018-Q2,41,1.67
+unavailable,2018-Q2,25,1.48
+processing,2018-Q2,14,1.14

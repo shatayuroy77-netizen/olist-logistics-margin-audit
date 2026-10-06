@@ -1,0 +1,5 @@
+purchase_quarter,delivery_status,total_delivered_orders,avg_seller_days,avg_carrier_days
+2018-Q1,delay,2656,4.30,30.80
+2018-Q1,"on time",17935,2.75,9.50
+2018-Q2,delay,816,4.42,26.45
+2018-Q2,"on time",18542,2.16,7.15

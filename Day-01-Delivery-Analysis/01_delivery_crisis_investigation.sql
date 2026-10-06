@@ -34,7 +34,7 @@ SELECT
     END AS purchase_quarter,
     COUNT(order_id) AS total_delivered_orders,
     ROUND(100.0 * SUM(CASE
-                WHEN order_delivered_customer_date > order_estimated_delivery_date THEN 1
+                WHEN DATE(order_delivered_customer_date) > DATE(order_estimated_delivery_date) THEN 1
                 ELSE 0
             END) / COUNT(order_id), 2) AS late_order_pct
 FROM orders
@@ -48,7 +48,7 @@ ORDER BY purchase_quarter;
 
 
 -- ----------------------------------------------------------------------------
--- Step 2: Process Bottleneck Identification
+-- Step 2a: Process Bottleneck Identification
 -- Question: Is the delivery delay driven by seller dispatch lag or courier transit lag?
 -- Deconstructing fulfillment duration into merchant dispatch vs courier transit.
 -- ----------------------------------------------------------------------------
@@ -65,6 +65,7 @@ WHERE order_status = 'delivered'
   AND order_approved_at IS NOT NULL
   AND order_delivered_carrier_date IS NOT NULL
   AND order_delivered_customer_date IS NOT NULL
+  AND DATEDIFF(order_delivered_carrier_date, order_approved_at) >= 0
   AND order_purchase_timestamp >= '2018-01-01'
   AND order_purchase_timestamp < '2018-07-01'
 GROUP BY purchase_quarter
@@ -72,23 +73,58 @@ ORDER BY purchase_quarter;
 
 
 -- ----------------------------------------------------------------------------
+-- Step 2b: Late vs On-Time Bottleneck Comparison
+-- Question: Do late orders lose their time at the seller stage or the carrier stage?
+-- Comparing seller dispatch days and carrier transit days for late vs on-time orders.
+-- ----------------------------------------------------------------------------
+SELECT 
+    CASE
+        WHEN order_purchase_timestamp >= '2018-01-01' AND order_purchase_timestamp < '2018-04-01' THEN '2018-Q1'
+        WHEN order_purchase_timestamp >= '2018-04-01' AND order_purchase_timestamp < '2018-07-01' THEN '2018-Q2'
+    END AS purchase_quarter,
+    CASE
+        WHEN DATE(order_delivered_customer_date) > DATE(order_estimated_delivery_date) THEN 'delay'
+        ELSE 'on time'
+    END AS delivery_status,
+    COUNT(order_id) AS total_delivered_orders,
+    ROUND(AVG(DATEDIFF(order_delivered_carrier_date, order_approved_at)), 2) AS avg_seller_days,
+    ROUND(AVG(DATEDIFF(order_delivered_customer_date, order_delivered_carrier_date)), 2) AS avg_carrier_days
+FROM orders
+WHERE order_status = 'delivered'
+  AND order_approved_at IS NOT NULL
+  AND order_delivered_carrier_date IS NOT NULL
+  AND order_delivered_customer_date IS NOT NULL
+  AND order_estimated_delivery_date IS NOT NULL
+  AND DATEDIFF(order_delivered_carrier_date, order_approved_at) >= 0
+  AND order_purchase_timestamp >= '2018-01-01'
+  AND order_purchase_timestamp < '2018-07-01'
+GROUP BY purchase_quarter, delivery_status
+ORDER BY purchase_quarter, delivery_status;
+
+
+-- ----------------------------------------------------------------------------
 -- Step 3: Customer Sentiment vs Delivery Punctuality
 -- Question: How severe is the customer review score penalty when a delivery is delayed?
 -- Quantifying the impact of on-time vs delayed deliveries on average review scores.
 -- ----------------------------------------------------------------------------
+WITH one_review AS (
+    SELECT order_id, AVG(review_score) AS review_score
+    FROM order_reviews
+    GROUP BY order_id
+)
 SELECT 
     CASE
         WHEN o.order_purchase_timestamp >= '2018-01-01' AND o.order_purchase_timestamp < '2018-04-01' THEN '2018-Q1'
         WHEN o.order_purchase_timestamp >= '2018-04-01' AND o.order_purchase_timestamp < '2018-07-01' THEN '2018-Q2'
     END AS purchase_quarter,
     CASE
-        WHEN o.order_delivered_customer_date > o.order_estimated_delivery_date THEN 'delay'
+        WHEN DATE(o.order_delivered_customer_date) > DATE(o.order_estimated_delivery_date) THEN 'delay'
         ELSE 'on time'
     END AS delivery_status,
     COUNT(o.order_id) AS total_orders,
     ROUND(AVG(o_r.review_score), 2) AS avg_review_score
 FROM orders o
-INNER JOIN order_reviews o_r ON o.order_id = o_r.order_id
+INNER JOIN one_review o_r ON o.order_id = o_r.order_id
 WHERE o.order_status = 'delivered'
   AND o.order_delivered_customer_date IS NOT NULL
   AND o.order_estimated_delivery_date IS NOT NULL
@@ -103,35 +139,45 @@ ORDER BY purchase_quarter, delivery_status;
 -- Question: Did remote states face isolated logistics failures masked by São Paulo volume?
 -- Auditing state-level delay rates and review score distributions across quarters.
 -- ----------------------------------------------------------------------------
+WITH one_review AS (
+    SELECT order_id, AVG(review_score) AS review_score
+    FROM order_reviews
+    GROUP BY order_id
+)
 SELECT 
     c.customer_state,
     CASE
         WHEN o.order_purchase_timestamp >= '2018-01-01' AND o.order_purchase_timestamp < '2018-04-01' THEN '2018-Q1'
         WHEN o.order_purchase_timestamp >= '2018-04-01' AND o.order_purchase_timestamp < '2018-07-01' THEN '2018-Q2'
     END AS purchase_quarter,
-    CASE
-        WHEN o.order_delivered_customer_date > o.order_estimated_delivery_date THEN 'delay'
-        ELSE 'on time'
-    END AS delivery_status,
+    ROUND(100.0 * SUM(CASE
+                WHEN DATE(o.order_delivered_customer_date) > DATE(o.order_estimated_delivery_date) THEN 1
+                ELSE 0
+            END) / COUNT(o.order_id), 2) AS late_order_pct,
     COUNT(o.order_id) AS total_orders,
     ROUND(AVG(o_r.review_score), 2) AS avg_review_score
 FROM orders o
-INNER JOIN order_reviews o_r ON o.order_id = o_r.order_id
+INNER JOIN one_review o_r ON o.order_id = o_r.order_id
 INNER JOIN customers c ON c.customer_id = o.customer_id
 WHERE o.order_status = 'delivered'
   AND o.order_delivered_customer_date IS NOT NULL
   AND o.order_estimated_delivery_date IS NOT NULL
   AND o.order_purchase_timestamp >= '2018-01-01'
   AND o.order_purchase_timestamp < '2018-07-01'
-GROUP BY c.customer_state, purchase_quarter, delivery_status
-ORDER BY c.customer_state, purchase_quarter, delivery_status;
+GROUP BY c.customer_state, purchase_quarter
+ORDER BY c.customer_state, purchase_quarter;
 
 
 -- ----------------------------------------------------------------------------
--- Step 5: The Survivorship Bias Audit
--- Question: Are cancellation or out-of-stock volumes skewing delivered ratings?
+-- Step 5a: The Survivorship Bias Audit
+-- Question: Are non-delivered orders (cancelled, unavailable, stuck in transit) dragging down the overall review score?
 -- Checking non-delivered order status distributions and their impact on review sentiment.
 -- ----------------------------------------------------------------------------
+WITH one_review AS (
+    SELECT order_id, AVG(review_score) AS review_score
+    FROM order_reviews
+    GROUP BY order_id
+)
 SELECT 
     o.order_status,
     CASE
@@ -141,11 +187,38 @@ SELECT
     COUNT(DISTINCT o.order_id) AS total_orders,
     ROUND(AVG(o_r.review_score), 2) AS avg_review_score
 FROM orders o
-LEFT JOIN order_reviews o_r ON o.order_id = o_r.order_id
+LEFT JOIN one_review o_r ON o.order_id = o_r.order_id
 WHERE o.order_purchase_timestamp >= '2018-01-01'
   AND o.order_purchase_timestamp < '2018-07-01'
 GROUP BY purchase_quarter, o.order_status
 ORDER BY purchase_quarter, total_orders DESC;
+
+
+-- ----------------------------------------------------------------------------
+-- Step 5b: Measuring the Non-Delivered Drag
+-- Question: By how much do non-delivered orders pull down the overall review score?
+-- Comparing the average score of all reviewed orders vs delivered orders only.
+-- ----------------------------------------------------------------------------
+WITH one_review AS (
+    SELECT order_id, AVG(review_score) AS review_score
+    FROM order_reviews
+    GROUP BY order_id
+)
+SELECT 
+    CASE
+        WHEN o.order_purchase_timestamp >= '2018-01-01' AND o.order_purchase_timestamp < '2018-04-01' THEN '2018-Q1'
+        WHEN o.order_purchase_timestamp >= '2018-04-01' AND o.order_purchase_timestamp < '2018-07-01' THEN '2018-Q2'
+    END AS purchase_quarter,
+    COUNT(o_r.review_score) AS reviewed_orders,
+    ROUND(AVG(o_r.review_score), 2) AS avg_score_all_orders,
+    ROUND(AVG(CASE WHEN o.order_status = 'delivered' THEN o_r.review_score END), 2) AS avg_score_delivered_only,
+    ROUND(AVG(o_r.review_score) - AVG(CASE WHEN o.order_status = 'delivered' THEN o_r.review_score END), 2) AS score_drag
+FROM orders o
+LEFT JOIN one_review o_r ON o.order_id = o_r.order_id
+WHERE o.order_purchase_timestamp >= '2018-01-01'
+  AND o.order_purchase_timestamp < '2018-07-01'
+GROUP BY purchase_quarter
+ORDER BY purchase_quarter;
 
 
 -- ----------------------------------------------------------------------------
@@ -158,13 +231,13 @@ SELECT
         WHEN review_creation_date >= '2018-01-01' AND review_creation_date < '2018-04-01' THEN '2018-Q1'
         WHEN review_creation_date >= '2018-04-01' AND review_creation_date < '2018-07-01' THEN '2018-Q2'
     END AS review_quarter,
-    COUNT(DISTINCT order_id) AS total_orders,
+    COUNT(*) AS total_reviews,
     ROUND(AVG(review_score), 2) AS avg_review_score
 FROM order_reviews
 WHERE review_creation_date >= '2018-01-01'
   AND review_creation_date < '2018-07-01'
 GROUP BY review_quarter
-ORDER BY review_quarter, total_orders DESC;
+ORDER BY review_quarter;
 
 
 -- ----------------------------------------------------------------------------
@@ -174,16 +247,16 @@ ORDER BY review_quarter, total_orders DESC;
 -- ----------------------------------------------------------------------------
 SELECT 
     LEFT(review_creation_date, 7) AS review_month,
-    COUNT(DISTINCT order_id) AS total_orders,
+    COUNT(*) AS total_reviews,
     ROUND(AVG(review_score), 2) AS avg_review_score,
     SUM(CASE
         WHEN review_score = 1 THEN 1
         ELSE 0
-    END) AS one_star_reviewers,
+    END) AS one_star_reviews,
     ROUND(100.0 * SUM(CASE
                 WHEN review_score = 1 THEN 1
                 ELSE 0
-            END) / COUNT(review_score), 2) AS one_star_pct
+            END) / COUNT(*), 2) AS one_star_pct
 FROM order_reviews
 WHERE review_creation_date >= '2018-01-01'
   AND review_creation_date < '2018-07-01'
