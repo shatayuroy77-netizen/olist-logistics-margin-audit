@@ -26,6 +26,14 @@ Full deck: [Day1_Delivery_Audit_Deck.pdf](./Day1_Delivery_Audit_Deck.pdf)
 
 **Carrier days** = handed to carrier → delivered to customer.
 
+## Data traps caught
+
+Three issues in the raw data would have changed the answer if left alone:
+
+- **Timestamps vs dates.** The estimated delivery date is stored at midnight. Comparing full timestamps flags orders delivered on the due date as late, which would have shown 14.58% late in Q1 instead of 12.88%, and 5.09% in Q2 instead of 4.17%.
+- **Duplicate reviews.** The reviews table has 99,224 rows but only 98,673 distinct orders. Joining it directly counts some orders twice, so reviews are reduced to one row per order first.
+- **Impossible dates.** 321 orders show a carrier pickup before the order was approved. They are left out of the timing analysis.
+
 ## Limits
 
 - The data has no carrier names, so the analysis shows that the carrier leg is slow, not which carrier.
