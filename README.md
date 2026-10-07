@@ -1,77 +1,58 @@
-# 📊 Olist E-Commerce Analytics: Logistics Margin Drag & Customer LTV Audit
+# Olist Logistics & Margin Audit (MySQL)
 
-**Business Context:** Olist, a major Brazilian e-commerce marketplace, experienced rapid GMV growth in H1 2018. However, executive leadership flagged significant margin erosion and an escalating spike in negative customer sentiment.  
-**Objective:** Architect an end-to-end SQL diagnostic pipeline to isolate operational bottlenecks across merchant SLAs, freight unit economics, and cohort retention.
+A 5-day SQL audit of the public [Olist Brazilian e-commerce dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) (about 100K orders). Each day answers one question from a simulated stakeholder, with the SQL, the exported results and a short deck.
+
+## Latest finding (Day 1)
+
+Late deliveries hit **12.88% in Q1 2018** and fell to **4.17% in Q2**. A late order scored about 2 stars lower than an on-time one. The delay sits with the **carrier**: in Q1, late orders spent 30.80 days with the carrier against 9.50 for on-time orders, while sellers added only 1.55 days. Bahia, Pará and Ceará are still above 12% late.
+
+[Day 1: queries, results and deck](./Day-01-Delivery-Analysis)
+
+## Progress
+
+| Day | Stakeholder | Question | Status |
+|---|---|---|---|
+| 1 | Marcos Silva, Head of Logistics | Is the delivery crisis real, and are the carriers to blame? | Done |
+| 2 | Camila Duarte, Head of Vendor Operations | Should we really penalize 3,000 sellers? | In review |
+| 3 | | When does freight cost more than the product? | Planned |
+| 4 | | Payment methods and repeat customers | Planned |
+| 5 | | Product categories and review scores | Planned |
+
+Numbers for Days 2 to 5 are added here only after each day's queries are checked.
+
+## Rules set on Day 1
+
+- **Late** = `DATE(delivered) > DATE(estimated)`, comparing dates, not timestamps.
+- **One review per order**, through the view `v_one_review`.
+- **Impossible dates excluded**, such as a carrier pickup earlier than the order approval.
+- **Same denominator** inside every comparison.
+
+From Day 2 on, `order_items` and `order_payments` have several rows per order, so they need to be rolled up to order level before joining to `orders`.
+
+## Technical notes
+
+**Loading the data.** `scripts/data_ingestion.py` reads the nine Olist CSV files with pandas and writes them to MySQL through SQLAlchemy, 10,000 rows at a time. Each run replaces the tables, so the database can be rebuilt from scratch. Date columns are then converted to `DATETIME` in SQL, in Step 0 of the Day 1 script.
+
+**Views.** `v_one_review` keeps the review-cleaning rule in one place, so every query uses the same logic. It is a regular view: it makes queries simpler, not faster.
+
+## Tools
+
+MySQL 8.0 · Python (pandas, SQLAlchemy) · CTEs · `CASE WHEN` · `DATEDIFF` · views
+
+## Repo structure
+
+    ├── scripts/
+    │   └── data_ingestion.py
+    ├── Day-01-Delivery-Analysis/            Done
+    │   ├── README.md
+    │   ├── 01_delivery_crisis_investigation.sql
+    │   ├── Day1_Delivery_Audit_Deck.pdf
+    │   └── outputs/                         11 result CSVs
+    ├── Day-02-Seller-SLA/                   In review
+    ├── Day-03-Freight-Economics/            Planned
+    ├── Day-04-Payment-Retention/            Planned
+    └── Day-05-Product-Quality/              Planned
 
 ---
 
-## 💡 Executive Summary
-This project is an end-to-end data audit of Olist’s fulfillment and commercial architecture. By engineering memory-optimized SQL queries across 100K+ raw relational records, the analysis revealed that **margin erosion was heavily driven by toxic interstate freight pricing**, while **customer churn and 1-star review spikes were directly linked to merchant dispatch breaches** rather than pure carrier logistics delays.
-
-**Tech Stack & Key Skills:**  
-* **Data Engineering & Ingestion:** Python (`pandas`, `SQLAlchemy`, `mysql-connector-python`), Batch Chunk Processing.
-* **Database & Querying:** MySQL 8.0+, Advanced Aggregations (`CASE WHEN`, `COALESCE`), Temporal Functions (`DATEDIFF`, `TIMESTAMPDIFF`).
-* **Advanced SQL Frameworks:** Window Functions (`DENSE_RANK`, Cumulative GMV/Running Totals), CTEs, Dynamic Materialized Views (`v_clean_delivered_items`).
-* **Performance Tuning:** Optimizer Execution Plan Enforcement (`STRAIGHT_JOIN` memory buffer bounding).
-* **Business Analytics:** Unit Economics, Cohort Retention Curves, ABC/Pareto 80/20 Segmentation, Fulfillment SLA Diagnostics.
-
----
-
-## 🔍 End-to-End Operational Bottlenecks
-
-### 1. Logistics & Unit Economics (Margin Drag)
-* **The "Toxic Freight" Crisis:** Discovered that in **~3.5% to 4%** of total delivered orders, freight fees equaled or exceeded product prices, burning **R$ 43,369** in subsidization during H1 2018.
-* **Interstate Bottleneck:** **~60% to 64%** of all customer deliveries crossed state borders, where average fulfillment freight rose to **~R$ 24.1** compared to **~R$ 13.3** for local deliveries.
-
-### 2. Seller SLA & Customer Sentiment (The 1-Star Spike)
-* **Merchant Dispatch Breaches:** Proved that **1.17%** of deliveries suffered customer-facing breaches solely due to sellers missing their shipping limit dates, while carrier transit rescued **5.26%** of otherwise late dispatches.
-* **Chronic Offenders:** Isolated the **Top 10** repeat offenders (volume >= 20 items) who routinely breached dispatch limits across Q1 and Q2, fueling an alarming surge in 1-star customer ratings.
-
-### 3. Customer Retention (LTV) & Payment Friction
-* **The One-and-Done Dilemma:** A staggering **97%** of Olist's customer base never returned for a repeat order, rendering customer acquisition economics unsustainable.
-* **Payment Clearance Latency:** While Credit Cards captured dominant GMV share, Boleto transactions averaged **1.38 days** in clearance delays, triggering downstream fulfillment backlogs.
-
----
-
-## ⚙️ Architecture & Engineering Optimization
-
-### 🛠️ Automated Data Pipeline & Ingestion Architecture
-* **The Challenge:** Standard GUI import wizards in MySQL Workbench faced network socket timeouts (`CR_SERVER_LOST 2006`) and RAM exhaustion when ingesting 100K+ relational records.
-* **The Solution:** Developed a robust Python ETL pipeline script (`scripts/data_ingestion.py`) using `pandas` and `SQLAlchemy`.
-* **Execution Blueprint:**
-  - Implemented streaming chunked insertion (`chunksize=10000`) to bound client-side memory footprint.
-  - Enforced schema typing and direct datetime casting (`DATETIME`) during load to prevent downstream query casting overhead.
-  - Handled dependency sequences across primary/foreign key constraints during relational table creation.
-
-### Query Memory Optimization (`STRAIGHT_JOIN`)
-* **Problem:** Unindexed 4-table joins (`orders` -> `items` -> `sellers` -> `customers`) forced the MySQL optimizer to pick suboptimal driving tables, triggering buffer pool exhaustion and fatal connection terminations.
-* **Solution:** Explicitly enforced the execution order via **`STRAIGHT_JOIN`**, driving scans strictly from filtered delivered orders.
-* **Impact:** Reduced join complexity to $O(N)$ and eliminated virtual CTE memory bloat without modifying server-level buffer allocation.
-
-### Dynamic View Pipelines
-* Abstracted multi-table normalization joins and multilingual column mappings by compiling the `v_clean_delivered_items` View, delivering instantaneous aggregations for ABC/Pareto inventory metrics.
-
----
-
-## 📂 Repository Directory Structure
-
-```text
-├── .gitignore                      # Prevents committing credentials, venv & raw dumps
-├── README.md                       # Comprehensive business & technical audit documentation
-├── scripts/
-│   └── data_ingestion.py           # Automated Python ETL pipeline (Chunk ingestion)
-├── Day-01-Delivery-Analysis/
-│   ├── day1_queries.sql            # Macro baselines & review score correlations
-│   └── outputs/                    # Exported audit CSVs (Steps 1-7)
-├── Day-02-Seller-SLA/
-│   ├── day2_queries.sql            # 4-Bucket SLA matrix & Top 10 Chronic Offenders
-│   └── outputs/                    # Exported audit CSVs (Steps 1-5)
-├── Day-03-Freight-Economics/
-│   ├── day3_queries.sql            # Toxic freight corridor evaluation & margin leakage
-│   └── outputs/                    # Exported audit CSVs (Steps 1-5)
-├── Day-04-Payment-Retention/
-│   ├── day4_queries.sql            # Payment latency & cohort retention analysis
-│   └── outputs/                    # Exported audit CSVs (Steps 1-5)
-└── Day-05-Product-Quality/
-    ├── day5_queries.sql            # Pareto ABC categorization & density diagnostics
-    └── outputs/                    # Exported audit CSVs (Steps 1-5)
+Shatayu Roy · [LinkedIn](https://www.linkedin.com/in/shatayu-roy/)
