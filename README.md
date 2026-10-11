@@ -4,7 +4,7 @@ A 5-day SQL audit of the public [Olist Brazilian e-commerce dataset](https://www
 
 ## Latest finding (Day 1)
 
-Late deliveries hit **12.88% in Q1 2018** and fell to **4.17% in Q2**. A late order scored about 2 stars lower than an on-time one. The delay sits with the **carrier**: in Q1, late orders spent 30.80 days with the carrier against 9.50 for on-time orders, while sellers added only 1.55 days. Bahia, Pará and Ceará are still above 12% late.
+Day 1 analyses 40,270 delivered orders from January to June 2018. Late deliveries hit **12.88% in Q1 2018** and fell to **4.17% in Q2**. A late order scored about 2 stars lower than an on-time one. The delay sits with the **carrier**: in Q1, late orders spent 30.80 days with the carrier against 9.50 for on-time orders, while sellers added only 1.55 days. Bahia, Pará and Ceará are still above 12% late.
 
 [Day 1: queries, results and deck](./Day-01-Delivery-Analysis)
 
@@ -37,7 +37,7 @@ From Day 2 on, `order_items` and `order_payments` have several rows per order, s
 
 ## Tools
 
-MySQL 8.0 · Python (pandas, SQLAlchemy) · CTEs · `CASE WHEN` · `DATEDIFF` · views
+MySQL 8.0 · Python (pandas, SQLAlchemy) · `CASE WHEN` · `DATEDIFF` · views
 
 ## Repo structure
 
