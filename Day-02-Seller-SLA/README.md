@@ -45,6 +45,6 @@ Full deck: `Day2_Seller_SLA_Deck.pdf`
 Day-02-Seller-SLA/
 ├── README.md
 ├── 02_merchant_dispatch_audit.sql   # all queries, in order (Step 1 to Step 10)
-├── Day2_Seller_SLA_Deck.pdf         # 12-slide deck for Camila
+├── Day2_Seller_SLA_Deck.pdf         # 13-slide deck for Camila
 └── outputs/                         # 10 result CSVs, one per step (d02_01 to d02_10)
 ```
