@@ -11,7 +11,11 @@
 3. **Customers punish late arrival, not seller delay.** A late dispatch rescued by the courier scored 4.12 stars, almost the same as a clean delivery (4.23). When the customer got it late, the score fell to 2.29 to 2.61, and about half the reviews were 1-star.
 4. **12 sellers drive 43% of the harm.** Ranked by late customers they caused, not by breach count, 12 sellers account for 95 of 220 seller-caused late deliveries in Q2. Only 7 of them had a bad Q1 record too, so a history-based rule would have missed five.
 
-Full deck: `Day2_Seller_SLA_Deck.pdf`
+### Why it matters
+
+Targeting 12 sellers instead of 3,000 keeps good sellers on the platform and focuses the team's effort. If the 12 fix their dispatch and couriers deliver on time, seller-caused late deliveries fall from 220 to as few as 125 a quarter (0.97% to about 0.55% of items), with roughly 38 fewer 1-star reviews. These are upper-bound estimates; the money value is not measured here, and Day 3 looks at cost.
+
+Full deck: [Day2_Seller_SLA_Deck.pdf](./Day2_Seller_SLA_Deck.pdf)
 
 ### How it was measured
 
