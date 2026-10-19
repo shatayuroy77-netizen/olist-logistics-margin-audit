@@ -331,6 +331,8 @@ WHERE o.order_status = 'delivered'
 -- Result: 12 sellers, 95 of 220 seller-caused late deliveries (43%).
 -- Only 7 of the 12 are 'chronic' in Step 6: 4 had too little Q1 history and
 -- 1 counts as 'reformed' by breach rate but still hurt customers.
+-- Impact: without these 95, seller-caused late items fall to 125 of 22,644 (0.55%).
+-- About 38 fewer 1-star reviews a quarter: 95 x (48% - 8%), a rough estimate.
 -- ----------------------------------------------------------------------------
 SELECT
     seller_id,
