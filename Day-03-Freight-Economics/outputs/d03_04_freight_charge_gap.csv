@@ -1,0 +1,5 @@
+purchase_quarter,shipping_type,total_items,total_freight_value,avg_freight_value,freight_to_gmv_pct
+2018-Q1,Interstate,15253,348395.76,22.84,18.69
+2018-Q1,Local,8319,111819.97,13.44,13.31
+2018-Q2,Interstate,13655,347032.35,25.41,18.92
+2018-Q2,Local,8992,119442.75,13.28,12.28
