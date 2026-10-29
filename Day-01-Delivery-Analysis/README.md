@@ -46,5 +46,5 @@ Three issues in the raw data would have changed the answer if left alone:
     Day-01-Delivery-Analysis/
     ├── README.md
     ├── 01_delivery_crisis_investigation.sql   # all queries, in order (Step 0 to Step 8)
-    ├── Day1_Delivery_Audit_Deck.pdf           # 12-slide deck for Marcos
+    ├── Day1_Delivery_Audit_Deck.pdf           # 13-slide deck for Marcos
     └── outputs/                               # 11 result CSVs, one per step
