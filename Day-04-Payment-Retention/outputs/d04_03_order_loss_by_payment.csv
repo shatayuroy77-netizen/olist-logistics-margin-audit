@@ -1,0 +1,5 @@
+payment_type,total_orders,lost_orders,lost_pct
+credit_card,32132,248,0.77
+boleto,7845,52,0.66
+voucher,1467,13,0.89
+debit_card,585,4,0.68

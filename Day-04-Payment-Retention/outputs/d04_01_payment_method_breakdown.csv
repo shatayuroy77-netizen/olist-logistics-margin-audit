@@ -1,0 +1,5 @@
+payment_type,total_orders,total_paid,avg_paid_per_order,paid_share_pct
+credit_card,31411,5119023.08,162.97,79.49
+boleto,7679,1098052.28,142.99,17.05
+voucher,1432,140613.99,98.19,2.18
+debit_card,573,81967.71,143.05,1.27
