@@ -11,6 +11,22 @@
 
 
 -- ----------------------------------------------------------------------------
+-- Step 0: Indexes (run once)
+-- Note: id columns are TEXT with no keys, so the four-table joins in Steps 3-7
+--       ran out of memory and crashed MySQL. Indexes on the join columns fix
+--       this. Every Olist id is 32 characters, hence (32). Day 4 uses these
+--       indexes too.
+-- ----------------------------------------------------------------------------
+CREATE INDEX idx_orders_order_id    ON orders (order_id(32));
+CREATE INDEX idx_orders_customer_id ON orders (customer_id(32));
+CREATE INDEX idx_customers_cust_id  ON customers (customer_id(32));
+CREATE INDEX idx_items_order_id     ON order_items (order_id(32));
+CREATE INDEX idx_items_seller_id    ON order_items (seller_id(32));
+CREATE INDEX idx_sellers_seller_id  ON sellers (seller_id(32));
+CREATE INDEX idx_payments_order_id  ON order_payments (order_id(32));
+
+
+-- ----------------------------------------------------------------------------
 -- Step 1: Freight vs GMV by Quarter
 -- Question: Is freight growing faster than GMV?
 -- ----------------------------------------------------------------------------
@@ -66,7 +82,6 @@ ORDER BY purchase_quarter;
 -- ----------------------------------------------------------------------------
 -- Step 3: Local vs Interstate Split
 -- Question: What share of items cross a state border?
--- Note: STRAIGHT_JOIN used to drive from filtered 'orders' and prevent buffer pool exhaustion.
 -- ----------------------------------------------------------------------------
 SELECT 
     CASE 
@@ -77,9 +92,12 @@ SELECT
     SUM(CASE WHEN s.seller_state <> c.customer_state THEN 1 ELSE 0 END) AS interstate_item_count,
     ROUND(100.00 * SUM(CASE WHEN s.seller_state <> c.customer_state THEN 1 ELSE 0 END) / COUNT(oi.order_item_id), 2) AS interstate_item_pct
 FROM orders o
-STRAIGHT_JOIN order_items oi ON o.order_id = oi.order_id
-STRAIGHT_JOIN sellers s ON oi.seller_id = s.seller_id
-STRAIGHT_JOIN customers c ON o.customer_id = c.customer_id
+INNER JOIN order_items oi 
+    ON o.order_id = oi.order_id
+INNER JOIN sellers s 
+    ON oi.seller_id = s.seller_id
+INNER JOIN customers c 
+    ON o.customer_id = c.customer_id
 WHERE o.order_status = 'delivered'
   AND o.order_purchase_timestamp >= '2018-01-01'
   AND o.order_purchase_timestamp <  '2018-07-01'
@@ -90,7 +108,8 @@ ORDER BY purchase_quarter;
 -- ----------------------------------------------------------------------------
 -- Step 4: Freight Charge Gap, Local vs Interstate
 -- Question: How much heavier is freight on interstate items?
--- Freight is also shown as % of item price, because interstate items cost more.
+-- Note: freight is also shown per R$ 100 of goods, because interstate items
+--       cost more, which pushes average freight up on its own.
 -- ----------------------------------------------------------------------------
 SELECT 
     CASE 
@@ -106,11 +125,11 @@ SELECT
     ROUND(AVG(oi.freight_value), 2) AS avg_freight_value,
     ROUND(100.00 * SUM(oi.freight_value) / SUM(oi.price), 2) AS freight_to_gmv_pct
 FROM orders o
-STRAIGHT_JOIN order_items oi 
+INNER JOIN order_items oi 
     ON o.order_id = oi.order_id
-STRAIGHT_JOIN sellers s 
+INNER JOIN sellers s 
     ON oi.seller_id = s.seller_id
-STRAIGHT_JOIN customers c 
+INNER JOIN customers c 
     ON o.customer_id = c.customer_id
 WHERE o.order_status = 'delivered'
   AND o.order_purchase_timestamp >= '2018-01-01'
@@ -138,11 +157,11 @@ SELECT
     ROUND(SUM(CASE WHEN oi.freight_value >= oi.price THEN oi.freight_value ELSE 0 END), 2) AS total_toxic_freight_value,
     ROUND(AVG(CASE WHEN oi.freight_value >= oi.price THEN oi.freight_value ELSE NULL END), 2) AS avg_toxic_freight
 FROM orders o
-STRAIGHT_JOIN order_items oi 
+INNER JOIN order_items oi 
     ON o.order_id = oi.order_id
-STRAIGHT_JOIN sellers s 
+INNER JOIN sellers s 
     ON oi.seller_id = s.seller_id
-STRAIGHT_JOIN customers c 
+INNER JOIN customers c 
     ON o.customer_id = c.customer_id
 WHERE o.order_status = 'delivered'
   AND o.order_purchase_timestamp >= '2018-01-01'
@@ -163,11 +182,11 @@ SELECT
     ROUND(AVG(oi.freight_value), 2) AS avg_freight_value,
     ROUND(100.00 * SUM(oi.freight_value) / SUM(oi.price), 2) AS freight_to_gmv_pct
 FROM orders o
-STRAIGHT_JOIN order_items oi 
+INNER JOIN order_items oi 
     ON o.order_id = oi.order_id
-STRAIGHT_JOIN sellers s 
+INNER JOIN sellers s 
     ON oi.seller_id = s.seller_id
-STRAIGHT_JOIN customers c 
+INNER JOIN customers c 
     ON o.customer_id = c.customer_id
 WHERE o.order_status = 'delivered'
   AND o.order_purchase_timestamp >= '2018-01-01'
@@ -189,9 +208,12 @@ SELECT
     ROUND(100.00 * SUM(CASE WHEN s.seller_state = c.customer_state THEN 1 ELSE 0 END) / COUNT(oi.order_item_id), 2) AS local_item_pct,
     ROUND(100.00 * SUM(oi.freight_value) / SUM(oi.price), 2) AS freight_to_gmv_pct
 FROM orders o
-STRAIGHT_JOIN order_items oi ON o.order_id = oi.order_id
-STRAIGHT_JOIN sellers s ON oi.seller_id = s.seller_id
-STRAIGHT_JOIN customers c ON o.customer_id = c.customer_id
+INNER JOIN order_items oi 
+    ON o.order_id = oi.order_id
+INNER JOIN sellers s 
+    ON oi.seller_id = s.seller_id
+INNER JOIN customers c 
+    ON o.customer_id = c.customer_id
 WHERE o.order_status = 'delivered'
   AND o.order_purchase_timestamp >= '2018-01-01'
   AND o.order_purchase_timestamp <  '2018-07-01'
@@ -202,11 +224,11 @@ ORDER BY local_item_pct, total_items DESC;
 -- ----------------------------------------------------------------------------
 -- Step 8: Who Pays the Freight?
 -- Question: Does the customer pay the full freight?
--- Counted per order: items and payments are totalled per order before joining,
--- because both tables have several rows per order.
+-- Rule: counted per order. Items and payments are totalled per order before
+--       joining, because both tables have several rows per order.
 -- Result: 99.76% of orders match. The other 96 paid more, never less.
 -- Note: 368 items (0.8%) had zero freight, likely free-shipping offers.
--- Who paid the carrier for these is not in the data.
+--       Who paid the carrier for these is not in the data.
 -- ----------------------------------------------------------------------------
 WITH item_totals AS (
     SELECT 
