@@ -40,7 +40,7 @@ Full deck: `Day4_Payment_Retention_Deck.pdf`
 - **`customer_id` is not a customer.** It changes with every order. Repeat buying only shows up with `customer_unique_id`.
 - **Not delivered is not lost.** The first version of Step 3 counted every non-delivered order as lost, including orders that were still being shipped. Only canceled and unavailable count now.
 - **An off-question step was dropped.** A credit card installment breakdown was interesting but did not test any of Lucas's claims, so it was removed.
-- **Step 6 never finished in MySQL.** The id columns are TEXT with no keys. Indexes on the join columns (Step 0) and two indexed temporary tables brought it down to seconds.
+- **Step 6 never finished in MySQL.** The id columns are TEXT with no keys. Indexes on the join columns (made in Day 3, Step 0) and two indexed temporary tables brought it down to seconds.
 - **One delivered order has no payment row,** so Step 5 has one single buyer fewer than Step 4 (90,556 vs 90,557).
 
 ### Limits
@@ -56,7 +56,7 @@ Full deck: `Day4_Payment_Retention_Deck.pdf`
 ```
 Day-04-Payment-Retention/
 ├── README.md
-├── 04_payments_retention_audit.sql   # all queries, in order (Step 0 to Step 6)
+├── 04_payments_retention_audit.sql   # all queries, in order (Step 1 to Step 6)
 ├── Day4_Payment_Retention_Deck.pdf   # deck for Lucas
 └── outputs/                          # 6 result CSVs, one per step (d04_01 to d04_06)
 ```

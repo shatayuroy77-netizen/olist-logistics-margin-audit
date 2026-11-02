@@ -6,18 +6,9 @@
 --               and whether slow Boleto is why customers don't come back.
 -- PERIOD      : Steps 1-3: Jan-Jun 2018, per order. Steps 4-6: full
 --               history, per customer. Delivered only, except Step 3.
+-- SETUP       : Run Day 3, Step 0 first. It creates the indexes these joins
+--               need; without them Step 6 never finished.
 -- ============================================================================
-
-
--- ----------------------------------------------------------------------------
--- Step 0: Indexes (run once)
--- Note: id columns are TEXT with no keys, so joins were very slow and
---       Step 6 never finished. Skip a line if that index already exists.
--- ----------------------------------------------------------------------------
-CREATE INDEX idx_orders_order_id    ON orders (order_id(32));
-CREATE INDEX idx_orders_customer_id ON orders (customer_id(32));
-CREATE INDEX idx_customers_cust_id  ON customers (customer_id(32));
-CREATE INDEX idx_payments_order_id  ON order_payments (order_id(32));
 
 
 -- ----------------------------------------------------------------------------
