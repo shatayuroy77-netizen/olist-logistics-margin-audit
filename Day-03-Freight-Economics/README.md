@@ -55,7 +55,7 @@ Full deck: `Day3_Freight_Corridor_Deck.pdf`
 ```
 Day-03-Freight-Economics/
 ├── README.md
-├── 03_logistics_cost_and_corridor_audit.sql   # all queries, in order (Step 1 to Step 8)
+├── 03_logistics_cost_and_corridor_audit.sql   # all queries, in order (Step 0 to Step 8)
 ├── Day3_Freight_Corridor_Deck.pdf             # 12-slide deck for Henrique
 └── outputs/                                   # 8 result CSVs, one per step (d03_01 to d03_08)
 ```
