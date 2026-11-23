@@ -1,4 +1,4 @@
-# Olist Logistics & Margin Audit (MySQL)
+# Olist SQL Case Study: Five Claims, One Dataset
 
 A 5-day SQL audit of the public Olist Brazilian e-commerce dataset (about 100K orders). Each day answers one question from a simulated stakeholder, with the SQL, the exported results and a short deck.
 
